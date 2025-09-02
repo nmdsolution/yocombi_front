@@ -1,0 +1,18 @@
+version: '3'
+services:
+  yocombifront-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: yocombifront-dev
+    ports:
+      - "3000:8080"  # Development server on port 3000
+    volumes:
+      - .:/app
+      - /app/.dart_tool
+      - /app/build
+    environment:
+      - FLUTTER_WEB_USE_SKIA=true
+      - API_BASE_URL=http://184.174.39.92:8081/v1  # Using 8081 instead of 8080
+    stdin_open: true
+    tty: true

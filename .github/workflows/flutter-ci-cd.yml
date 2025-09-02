@@ -1,0 +1,202 @@
+name: Flutter CI/CD with Team Tracking
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build_and_test:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      
+      - name: Create analysis_options.yaml
+        run: |
+          cat <<EOF > analysis_options.yaml
+          analyzer:
+            errors:
+              use_super_parameters: ignore
+              unnecessary_import: ignore
+              overridden_fields: ignore
+              annotate_overrides: ignore
+          linter:
+            rules:
+              always_use_package_imports: false
+              prefer_const_constructors: false
+          EOF
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Extract Git information
+        id: git-info
+        run: |
+          echo "GIT_COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+          echo "DEVELOPER_ID=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
+      
+      - name: Create developer info file
+        run: |
+          mkdir -p env
+          echo "DEVELOPER_IDENTIFIER=${{ steps.git-info.outputs.DEVELOPER_ID }}" > env/developer_info.env
+          echo "GIT_COMMIT_HASH=${{ steps.git-info.outputs.GIT_COMMIT_HASH }}" >> env/developer_info.env
+          echo "GIT_BRANCH=${{ steps.git-info.outputs.GIT_BRANCH }}" >> env/developer_info.env
+          echo "BUILD_VARIANT=ci" >> env/developer_info.env
+      
+      # - name: Analyze code
+      #   run: flutter analyze --no-pub --suppress-analytics
+      
+      # - name: Run unit tests
+      #   run: flutter test
+
+      # - name: Run tests with coverage
+      #   run: |
+      #     flutter test --coverage
+      #     genhtml coverage/lcov.info -o coverage/html
+
+  #      - name: Setup environment variables for Supabase
+  #        if: github.event_name == 'push'
+  #        run: |
+  #          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > env/.env
+  #          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> env/.env
+  #
+  #      - name: Record build in Supabase
+  #        if: github.event_name == 'push'
+  #        run: |
+  #          curl -X POST ${{ secrets.SUPABASE_URL }}/rest/v1/build_info \
+  #            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+  #            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+  #            -H "Content-Type: application/json" \
+  #            -d '{
+  #              "developer_identifier": "${{ steps.git-info.outputs.DEVELOPER_ID }}",
+  #              "git_commit_hash": "${{ steps.git-info.outputs.GIT_COMMIT_HASH }}",
+  #              "git_branch": "${{ steps.git-info.outputs.GIT_BRANCH }}",
+  #              "build_status": "completed",
+  #              "build_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  #            }'
+
+  deploy_android:
+    name: Deploy Android
+    needs: build_and_test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+      
+      - name: Extract Git information
+        id: git-info
+        run: |
+          echo "GIT_COMMIT_HASH=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+          echo "DEVELOPER_ID=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Create developer info file
+        run: |
+          mkdir -p env
+          echo "DEVELOPER_IDENTIFIER=${{ steps.git-info.outputs.DEVELOPER_ID }}" > env/developer_info.env
+          echo "GIT_COMMIT_HASH=${{ steps.git-info.outputs.GIT_COMMIT_HASH }}" >> env/developer_info.env
+          echo "GIT_BRANCH=${{ steps.git-info.outputs.GIT_BRANCH }}" >> env/developer_info.env
+          echo "BUILD_VARIANT=release" >> env/developer_info.env
+      
+      - name: Setup environment variables for Supabase
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > env/.env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> env/.env
+      
+      - name: Setup keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+      
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --dart-define=DEVELOPER_ID=${{ steps.git-info.outputs.DEVELOPER_ID }} \
+            --dart-define=GIT_COMMIT=${{ steps.git-info.outputs.GIT_COMMIT_HASH }} \
+            --dart-define=GIT_BRANCH=${{ steps.git-info.outputs.GIT_BRANCH }}
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-apk-${{ steps.git-info.outputs.GIT_BRANCH }}-${{ github.run_id }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  deploy_web:
+    name: Deploy Staging Web
+    needs: build_and_test
+    if: github.event_name == 'pull_request' && (github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter upgrade && flutter pub get
+
+      - name: Create developer info file
+        run: |
+          mkdir -p env
+          echo "DEVELOPER_IDENTIFIER=${{ steps.git-info.outputs.DEVELOPER_ID }}" > env/.env
+          echo "GIT_COMMIT_HASH=${{ steps.git-info.outputs.GIT_COMMIT_HASH }}" >> env/.env
+          echo "GIT_BRANCH=${{ steps.git-info.outputs.GIT_BRANCH }}" >> env/.env
+          echo "BUILD_VARIANT=web" >> env/developer_info.env
+
+      - name: Create web config file
+        run: |
+          echo "{}" > web/config.dev.json
+
+      - name: Enable Flutter Web
+        run: flutter config --enable-web
+      
+      - name: Build for Web
+        run: |
+          flutter build web --release \
+            --dart-define=DEVELOPER_ID=${{ steps.git-info.outputs.DEVELOPER_ID }} \
+            --dart-define=GIT_COMMIT=${{ steps.git-info.outputs.GIT_COMMIT_HASH }} \
+            --dart-define=GIT_BRANCH=${{ steps.git-info.outputs.GIT_BRANCH }} \
+            --base-href=/
+
+      - name: copy files to target server via scp
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME }}
+          port: 22
+          key: ${{ secrets.DEPLOY_KEY }}
+          passphrase: ${{ secrets.DEPLOY_PASSPHRASE }}
+          source: "./build/web"
+          target: "${{ secrets.DEPLOY_PATH }}/"
