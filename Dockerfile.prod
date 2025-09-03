@@ -1,0 +1,79 @@
+# Production Dockerfile for Flutter Web App
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    zip \
+    libglu1-mesa \
+    ca-certificates \
+    build-essential \
+    nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Flutter
+ENV PATH="/opt/flutter/bin:${PATH}"
+RUN git clone https://github.com/flutter/flutter.git -b stable /opt/flutter
+RUN flutter doctor
+RUN flutter precache
+RUN flutter config --enable-web
+
+# Set working directory
+WORKDIR /app
+
+# Create directories
+RUN mkdir -p env lib/config
+
+# Copy pubspec files first for better caching
+COPY pubspec.yaml pubspec.lock ./
+
+# Install dependencies
+RUN flutter pub get
+
+# Copy source code
+COPY . .
+
+# Create environment and config files
+ARG API_BASE_URL=http://184.174.39.92:8081/v1
+RUN echo "DEVELOPER_IDENTIFIER=yocombi-prod" > env/developer_info.env && \
+    echo "GIT_COMMIT_HASH=production" >> env/developer_info.env && \
+    echo "BUILD_MODE=production" >> env/developer_info.env
+
+RUN echo "const String apiBaseUrl = '${API_BASE_URL}';" > lib/config/api_config.dart
+
+# Build the Flutter web app for production
+RUN flutter build web --release
+
+# Configure nginx
+RUN rm -rf /var/www/html/*
+RUN cp -r build/web/* /var/www/html/
+
+# Copy nginx configuration
+COPY <<EOF /etc/nginx/sites-available/default
+server {
+    listen 80;
+    server_name _;
+    
+    root /var/www/html;
+    index index.html;
+    
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+    
+    # Handle Flutter web routing
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

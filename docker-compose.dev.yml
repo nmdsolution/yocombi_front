@@ -3,7 +3,7 @@ services:
   yocombifront-dev:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: yocombifront-dev
     ports:
       - "3000:8080"  # Development server on port 3000
