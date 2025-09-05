@@ -125,10 +125,10 @@ class AuthProvider extends ChangeNotifier {
     result.fold(
       (failure) {
         _errorMessage = failure.userFriendlyMessage ?? failure.message;
-        _setState(AuthState.success); // Fixed: Set success state instead of error
+        _setState(AuthState.error); // FIXED: Set error state for failures
       },
       (response) async {
-        // FIXED: Properly handle the login response
+        // Handle the login response
         await _handleLoginSuccess(response);
       },
     );
@@ -188,8 +188,8 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('Error handling login success: $e');
-      _errorMessage = null; // Fixed: Set error to null for successful login
-      _setState(AuthState.success); // Fixed: Set success state instead of error
+      _errorMessage = 'Failed to process login response: $e';
+      _setState(AuthState.error); // FIXED: Set error state for exceptions
     }
   }
 
@@ -245,7 +245,7 @@ class AuthProvider extends ChangeNotifier {
     result.fold(
       (failure) {
         _errorMessage = failure.userFriendlyMessage ?? failure.message;
-        _setState(AuthState.success); // Fixed: Set success state instead of error
+        _setState(AuthState.error); // FIXED: Set error state for failures
       },
       (response) {
         _currentIdentifier = identifier;
@@ -268,7 +268,7 @@ class AuthProvider extends ChangeNotifier {
     result.fold(
       (failure) {
         _errorMessage = failure.userFriendlyMessage ?? failure.message;
-        _setState(AuthState.success); // Fixed: Set success state instead of error
+        _setState(AuthState.error); // FIXED: Set error state for failures
       },
       (response) {
         _currentIdentifier = identifier;
@@ -283,7 +283,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> verifyOtp(String code) async {
     if (_currentIdentifier == null || _currentType == null) {
       _errorMessage = 'Invalid authentication flow. Please start over.';
-      _setState(AuthState.success); // Fixed: Set success state instead of error
+      _setState(AuthState.error); // FIXED: Set error state for invalid flow
       return;
     }
 
@@ -301,7 +301,7 @@ class AuthProvider extends ChangeNotifier {
     result.fold(
       (failure) {
         _errorMessage = failure.userFriendlyMessage ?? failure.message;
-        _setState(AuthState.success); // Fixed: Set success state instead of error
+        _setState(AuthState.error); // FIXED: Set error state for failures
       },
       (response) async {
         if (_currentType == 'login') {
@@ -326,7 +326,7 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     if (_currentIdentifier == null || _sessionToken == null) {
       _errorMessage = 'Invalid registration flow. Please start over.';
-      _setState(AuthState.success); // Fixed: Set success state instead of error
+      _setState(AuthState.error); // FIXED: Set error state for invalid flow
       return;
     }
 
@@ -348,7 +348,7 @@ class AuthProvider extends ChangeNotifier {
     result.fold(
       (failure) {
         _errorMessage = failure.userFriendlyMessage ?? failure.message;
-        _setState(AuthState.success); // Fixed: Set success state instead of error
+        _setState(AuthState.error); // FIXED: Set error state for failures
       },
       (user) {
         _handleRegistrationSuccess(user);
@@ -374,7 +374,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       print('Error handling registration success: $e');
       _errorMessage = 'Registration completed but failed to authenticate. Please try logging in.';
-      _setState(AuthState.success); // Fixed: Set success state instead of error
+      _setState(AuthState.error); // FIXED: Set error state for exceptions
     }
   }
 
@@ -388,7 +388,7 @@ class AuthProvider extends ChangeNotifier {
         (failure) {
           print('Failed to fetch current user: ${failure.message}');
           _errorMessage = 'Login successful but failed to load user data';
-          _setState(AuthState.success); // Fixed: Set success state instead of error
+          _setState(AuthState.error); // FIXED: Set error state for failures
         },
         (user) async {
           print('Current user fetched successfully: ${user?.name}');
@@ -414,7 +414,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       print('Error fetching current user: $e');
       _errorMessage = 'Failed to load user data';
-      _setState(AuthState.success); // Fixed: Set success state instead of error
+      _setState(AuthState.error); // FIXED: Set error state for exceptions
     }
   }
 
@@ -436,7 +436,7 @@ class AuthProvider extends ChangeNotifier {
 
   void setError(String error) {
     _errorMessage = error;
-    _setState(AuthState.success); // Fixed: Set success state instead of error
+    _setState(AuthState.error); // FIXED: Set error state for manual errors
   }
 
   void setLoading() {
