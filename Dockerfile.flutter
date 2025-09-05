@@ -1,0 +1,40 @@
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl git wget unzip xz-utils zip ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -s /bin/bash flutter_user
+
+USER flutter_user
+WORKDIR /home/flutter_user
+
+# Clone Flutter stable (more reliable than master)
+RUN git clone https://github.com/flutter/flutter.git -b stable flutter
+ENV PATH="/home/flutter_user/flutter/bin:${PATH}"
+
+# Enable web support & pre-cache
+RUN flutter config --enable-web && flutter precache --web
+
+WORKDIR /app
+
+# Copy pubspec first for dependency caching
+COPY --chown=flutter_user:flutter_user pubspec.yaml pubspec.lock ./
+RUN flutter pub get
+
+# Copy project
+COPY --chown=flutter_user:flutter_user . .
+
+# Build Flutter web (release mode)
+RUN flutter build web --release
+
+# ------------------------------
+# Stage 2: Nginx to serve build
+# ------------------------------
+FROM nginx:alpine
+COPY --from=0 /app/build/web /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
