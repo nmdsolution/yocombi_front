@@ -736,66 +736,98 @@ class _MesDemandePageState extends State<MesDemandePage> {
   }
 
   List<PopupMenuEntry<String>> _buildActionMenu(JobOffer jobOffer) {
-    return [
-      const PopupMenuItem(
-        value: 'view',
-        child: Text('Voir'),
+  return [
+    const PopupMenuItem(
+      value: 'view',
+      child: Row(
+        children: [
+          Icon(Icons.visibility, size: 16),
+          SizedBox(width: 8),
+          Text('Voir'),
+        ],
       ),
+    ),
+    // Only show edit for draft and published status
+    if (jobOffer.isDraft || jobOffer.isPublished)
       const PopupMenuItem(
         value: 'edit',
-        child: Text('Modifier'),
+        child: Row(
+          children: [
+            Icon(Icons.edit, size: 16),
+            SizedBox(width: 8),
+            Text('Modifier'),
+          ],
+        ),
       ),
-      if (jobOffer.isDraft)
-        const PopupMenuItem(
-          value: 'publish',
-          child: Text('Publier'),
-        ),
-      if (!jobOffer.isCompleted && !jobOffer.isCancelled)
-        const PopupMenuItem(
-          value: 'cancel',
-          child: Text('Annuler'),
-        ),
+    if (jobOffer.isDraft)
       const PopupMenuItem(
-        value: 'delete',
-        child: Text('Supprimer'),
+        value: 'publish',
+        child: Row(
+          children: [
+            Icon(Icons.publish, size: 16),
+            SizedBox(width: 8),
+            Text('Publier'),
+          ],
+        ),
       ),
-    ];
-  }
-
+    if (!jobOffer.isCompleted && !jobOffer.isCancelled)
+      const PopupMenuItem(
+        value: 'cancel',
+        child: Row(
+          children: [
+            Icon(Icons.cancel, size: 16),
+            SizedBox(width: 8),
+            Text('Annuler'),
+          ],
+        ),
+      ),
+    const PopupMenuItem(
+      value: 'delete',
+      child: Row(
+        children: [
+          Icon(Icons.delete, size: 16, color: Colors.red),
+          SizedBox(width: 8),
+          Text('Supprimer', style: TextStyle(color: Colors.red)),
+        ],
+      ),
+    ),
+  ];
+}
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  void _handleAction(String action, JobOffer jobOffer) async {
-    final provider = Provider.of<JobOfferProvider>(context, listen: false);
-    
-    switch (action) {
-      case 'view':
-        _showJobOfferDetails(jobOffer);
-        break;
-      case 'edit':
-        Get.toNamed('/demandeur/edit-request/${jobOffer.id}');
-        break;
-      case 'publish':
-        final success = await provider.publishJobOffer(jobOffer.id);
-        if (success && mounted) {
-          Get.snackbar(
-            'Succès',
-            'Demande publiée avec succès',
-            backgroundColor: AppTheme.successColor,
-            colorText: Colors.white,
-          );
-          _filterJobOffers();
-        }
-        break;
-      case 'cancel':
-        _showCancelDialog(jobOffer);
-        break;
-      case 'delete':
-        _showDeleteDialog(jobOffer);
-        break;
-    }
+void _handleAction(String action, JobOffer jobOffer) async {
+  final provider = Provider.of<JobOfferProvider>(context, listen: false);
+  
+  switch (action) {
+    case 'view':
+      _showJobOfferDetails(jobOffer);
+      break;
+    case 'edit':
+      // Navigate to the new edit page
+      Get.toNamed('${AppRoutes.editDemande}/${jobOffer.id}');
+      break;
+    case 'publish':
+      final success = await provider.publishJobOffer(jobOffer.id);
+      if (success && mounted) {
+        Get.snackbar(
+          'Succès',
+          'Demande publiée avec succès',
+          backgroundColor: AppTheme.successColor,
+          colorText: Colors.white,
+        );
+        _filterJobOffers();
+      }
+      break;
+    case 'cancel':
+      _showCancelDialog(jobOffer);
+      break;
+    case 'delete':
+      _showDeleteDialog(jobOffer);
+      break;
   }
+}
 
   void _showJobOfferDetails(JobOffer jobOffer) {
     final isMobile = MediaQuery.of(context).size.width < 600;
