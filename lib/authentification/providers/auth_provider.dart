@@ -77,7 +77,7 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = await authRepository.isAuthenticated();
         
         if (_isAuthenticated) {
-          tokenRefreshService.startTokenRefresh();
+    //      tokenRefreshService.startTokenRefresh();
           final result = await authRepository.getCurrentUser();
           result.fold(
             (failure) {
@@ -161,7 +161,7 @@ class AuthProvider extends ChangeNotifier {
         await _storeAuthData(token, user);
         
         // Start token refresh service
-        tokenRefreshService.startTokenRefresh();
+    //    tokenRefreshService.startTokenRefresh();
         
         // Clear auth flow
         _clearAuthFlow();
@@ -364,7 +364,7 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = true;
 
       // Start token refresh service
-      tokenRefreshService.startTokenRefresh();
+   //   tokenRefreshService.startTokenRefresh();
       
       // Update state
       _setState(AuthState.success);
@@ -406,7 +406,7 @@ class AuthProvider extends ChangeNotifier {
             print('Error storing user data: $e');
           }
           
-          tokenRefreshService.startTokenRefresh();
+       //   tokenRefreshService.startTokenRefresh();
           _setState(AuthState.success);
           _clearAuthFlow();
         },
@@ -462,7 +462,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     try {
       // Stop token refresh
-      tokenRefreshService.stopTokenRefresh();
+    //  tokenRefreshService.stopTokenRefresh();
 
       // Clear stored authentication data
       await _clearStoredAuth();
