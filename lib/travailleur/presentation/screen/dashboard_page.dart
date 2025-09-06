@@ -1,11 +1,12 @@
-// lib/TravailleurPro/presentation/dashboard/dashboard_page.dart
+// lib/TravailleurPro/presentation/dashboard/dashboard_page.dart (FIXED)
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
-import 'package:provider/provider.dart';
 import '../../../core/widgets/top_navbar.dart';
 import '../../../core/routes/routes.dart';
 import '../../../core/theme/app_theme.dart';
-import '../widget/dashboard_sidebar.dart';
+import '../../../demandeur/presentation/controllers/sidebar_controller.dart';
+import '../../../demandeur/presentation/widget/universal_sidebar.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -20,12 +21,21 @@ class _DashboardPageState extends State<DashboardPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  int selectedNavIndex = 0;
-
   @override
   void initState() {
     super.initState();
+    _initControllers();
     _initAnimations();
+  }
+
+  void _initControllers() {
+    // Initialize sidebar controller if not already done
+    if (!Get.isRegistered<SidebarController>()) {
+      Get.put(SidebarController());
+    }
+    
+    // Use the safe update method that always defers the update
+    Get.find<SidebarController>().updateCurrentRouteSafe(AppRoutes.travailleurDashboard);
   }
 
   void _initAnimations() {
@@ -54,55 +64,25 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  void _onNavItemSelected(int index) {
-    setState(() {
-      selectedNavIndex = index;
-    });
-    
-    // Handle navigation based on selected index
-    switch (index) {
-      case 0:
-        // Dashboard - already here
-        break;
-      case 1:
-        // Navigate to missions page
-        Get.toNamed(AppRoutes.travailleurMissions);
-        break;
-      case 2:
-        // Navigate to new mission page
-        Get.toNamed(AppRoutes.travailleurNewMission);
-        break;
-      case 3:
-        // Navigate to location page
-        Get.toNamed(AppRoutes.travailleurLocation);
-        break;
-      case 4:
-        // Navigate to settings page
-        Get.toNamed(AppRoutes.travailleurSettings);
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
     return Scaffold(
       appBar: PageHeader(
-        title: 'Travailleur',
+        title: 'Dashboard Travailleur',
         showBackButton: true,
         showUserProfile: true,
-        backgroundColor: theme.scaffoldBackgroundColor,
-        titleColor: AppTheme.primaryGreen,
+        backgroundColor: Colors.white,
+        titleColor: AppTheme.primaryText,
         backButtonColor: AppTheme.primaryGreen,
       ),
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Row(
         children: [
-          // Sidebar
-          DashboardSidebar(
-            selectedNavIndex: selectedNavIndex,
-            onNavItemSelected: _onNavItemSelected,
+          // Universal Sidebar for Travailleur
+          const UniversalSidebar(
+            userType: 'travailleur',
           ),
           // Main Content
           Expanded(
@@ -136,7 +116,7 @@ class _DashboardPageState extends State<DashboardPage>
                         'Tableau de Bord - Travailleur',
                         style: theme.textTheme.headlineLarge,
                       ),
-                      // Optional: Add action button for workers
+                      // Status indicator
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -184,7 +164,7 @@ class _DashboardPageState extends State<DashboardPage>
                     children: [
                       _buildStatsCard(
                         Icons.work_outline,
-                        '12',
+                        '3',
                         'Missions actives',
                         AppTheme.primaryGreen,
                         AppTheme.primaryGreen.withOpacity(0.1),
@@ -192,7 +172,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                       _buildStatsCard(
                         Icons.check_circle_outline,
-                        '8',
+                        '18',
                         'Missions terminées',
                         AppTheme.successColor,
                         AppTheme.successColor.withOpacity(0.1),
@@ -200,18 +180,18 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                       _buildStatsCard(
                         Icons.schedule_outlined,
-                        '3',
-                        'En cours',
+                        '2',
+                        'En attente validation',
                         AppTheme.warningColor,
                         AppTheme.warningColor.withOpacity(0.1),
                         2,
                       ),
                       _buildStatsCard(
-                        Icons.cancel_outlined,
-                        '1',
-                        'Annulées',
-                        AppTheme.errorColor,
-                        AppTheme.errorColor.withOpacity(0.1),
+                        Icons.star_outline,
+                        '4.8',
+                        'Note moyenne',
+                        AppTheme.accentYellow,
+                        AppTheme.accentYellow.withOpacity(0.1),
                         3,
                       ),
                     ],
@@ -402,10 +382,5 @@ class _DashboardPageState extends State<DashboardPage>
         ],
       ),
     );
-  }
-
-  void _handleNewMission() {
-    // Navigate to new mission page
-    Get.toNamed(AppRoutes.travailleurNewMission);
   }
 }

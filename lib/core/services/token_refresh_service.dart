@@ -6,8 +6,8 @@ import '../storage/secure_storage.dart';
 class TokenRefreshService {
   Timer? _refreshTimer;
 
-  void startTokenRefresh() async {
-    final tokenRefreshInterval = await SecureStorage.getExpiresIn();
+  /*void startTokenRefresh() async {
+//    final tokenRefreshInterval = await SecureStorage.getExpiresIn();
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(
       Duration(seconds: tokenRefreshInterval ?? 3600),
@@ -15,7 +15,7 @@ class TokenRefreshService {
         await _refreshToken();
       },
     );
-  }
+  }*
 
   void stopTokenRefresh() {
     _refreshTimer?.cancel();
@@ -41,5 +41,5 @@ class TokenRefreshService {
 
   void dispose() {
     stopTokenRefresh();
-  }
+  }*/
 }

@@ -1,9 +1,12 @@
-// lib/presentation/travailleur/pages/travailleur_settings_page.dart
+// lib/presentation/travailleur/pages/travailleur_settings_page.dart (FIXED)
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/routes/routes.dart';
 import '../../../core/widgets/top_navbar.dart';
-import '../../../travailleur/presentation/widget/dashboard_sidebar.dart';
+import '../../../demandeur/presentation/controllers/sidebar_controller.dart';
+import '../../../demandeur/presentation/widget/universal_sidebar.dart';
 
 
 class TravailleurSettingsPage extends StatefulWidget {
@@ -31,6 +34,22 @@ class _TravailleurSettingsPageState extends State<TravailleurSettingsPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _initControllers();
+  }
+
+  void _initControllers() {
+    // Initialize sidebar controller if not already done
+    if (!Get.isRegistered<SidebarController>()) {
+      Get.put(SidebarController());
+    }
+    
+    // Use the safe update method that always defers the update
+    Get.find<SidebarController>().updateCurrentRouteSafe(AppRoutes.travailleurSettings);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
@@ -46,12 +65,9 @@ class _TravailleurSettingsPageState extends State<TravailleurSettingsPage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Row(
         children: [
-          // Sidebar
-          DashboardSidebar(
-            selectedNavIndex: 4,
-            onNavItemSelected: (index) {
-              // Handle navigation
-            },
+          // Universal Sidebar
+          const UniversalSidebar(
+            userType: 'travailleur',
           ),
           // Main Content
           Expanded(

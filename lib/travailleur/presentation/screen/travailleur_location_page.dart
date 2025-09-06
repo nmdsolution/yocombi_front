@@ -1,10 +1,12 @@
-// lib/presentation/travailleur/pages/travailleur_location_page.dart
+// lib/presentation/travailleur/pages/travailleur_location_page.dart (FIXED)
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/routes/routes.dart';
 import '../../../core/widgets/top_navbar.dart';
-import '../../../travailleur/presentation/widget/dashboard_sidebar.dart';
-
+import '../../../demandeur/presentation/controllers/sidebar_controller.dart';
+import '../../../demandeur/presentation/widget/universal_sidebar.dart';
 
 class TravailleurLocationPage extends StatefulWidget {
   const TravailleurLocationPage({super.key});
@@ -19,6 +21,22 @@ class _TravailleurLocationPageState extends State<TravailleurLocationPage> {
   String _currentLocation = 'Douala, Bonanjo';
   String _workRadius = '10 km';
   List<String> _serviceAreas = ['Douala', 'Yaoundé', 'Bafoussam'];
+
+  @override
+  void initState() {
+    super.initState();
+    _initControllers();
+  }
+
+  void _initControllers() {
+    // Initialize sidebar controller if not already done
+    if (!Get.isRegistered<SidebarController>()) {
+      Get.put(SidebarController());
+    }
+    
+    // Use the safe update method that always defers the update
+    Get.find<SidebarController>().updateCurrentRouteSafe(AppRoutes.travailleurLocation);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,12 +54,9 @@ class _TravailleurLocationPageState extends State<TravailleurLocationPage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Row(
         children: [
-          // Sidebar
-          DashboardSidebar(
-            selectedNavIndex: 3,
-            onNavItemSelected: (index) {
-              // Handle navigation
-            },
+          // Universal Sidebar
+          const UniversalSidebar(
+            userType: 'travailleur',
           ),
           // Main Content
           Expanded(

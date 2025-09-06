@@ -18,9 +18,9 @@ import '../../authentification/domain/usecases/login_usecase.dart';
 
 // Service Categories imports
 import '../../job-offers/domain/repositories/job_offer_repository_impl.dart';
-//import '../../job-offers/domain/usecases/Cancel_Joboffer_usecase.dart';
-import '../../job-offers/domain/usecases/Create_Joboffer_usecase.dart';
-//import '../../job-offers/domain/usecases/Start_Joboffer_usecase.dart';
+import '../../job-offers/domain/usecases/cancel_Joboffer_usecase.dart';
+import '../../job-offers/domain/usecases/create_Joboffer_usecase.dart';
+import '../../job-offers/domain/usecases/start_Joboffer_usecase.dart';
 import '../../job-offers/domain/usecases/complete_Joboffer_usecase.dart';
 import '../../job-offers/domain/usecases/delete_Joboffer_usecase.dart';
 import '../../job-offers/domain/usecases/get_Joboffer_usecase.dart';
@@ -147,8 +147,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => PartialUpdateJobOfferUseCase(sl()));
   sl.registerLazySingleton(() => DeleteJobOfferUseCase(sl()));
   sl.registerLazySingleton(() => PublishJobOfferUseCase(sl()));
-  //sl.registerLazySingleton(() => CancelJobOfferUseCase(sl()));
-  //sl.registerLazySingleton(() => StartJobOfferUseCase(sl()));
+  sl.registerLazySingleton(() => CancelJobOfferUseCase(sl()));
+  sl.registerLazySingleton(() => StartJobOfferUseCase(sl()));
   sl.registerLazySingleton(() => CompleteJobOfferUseCase(sl()));
   sl.registerLazySingleton(() => SearchJobOffersUseCase(sl()));
   sl.registerLazySingleton(() => GetFeaturedJobOffersUseCase(sl()));
