@@ -22,7 +22,7 @@ class CreateJobOfferUseCase {
     if (request.deadline != null && request.deadline!.isBefore(DateTime.now())) {
       return const Left(ValidationFailure(
         message: 'Invalid deadline',
-        userFriendlyMessage: 'Deadline must be in the future.',
+        userFriendlyMessage: 'Deadline must be in the future.',  
       ));
     }
 
