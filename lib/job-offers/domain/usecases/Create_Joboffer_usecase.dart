@@ -1,4 +1,4 @@
-// Create Job Offer Use Case
+// create_Joboffer_usecase
 import 'package:dartz/dartz.dart';
 import '../../../core/errors/failures.dart';
 import '../../data/repositories/job_offer_repository.dart';
